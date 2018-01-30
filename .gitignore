@@ -1,0 +1,7 @@
+*.pyc
+*.swp
+*.DS_Store
+*.ipynb
+results/*
+MBAM/*
+figs/*
