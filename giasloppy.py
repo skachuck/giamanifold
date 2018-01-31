@@ -42,7 +42,7 @@ TRUE_MODEL = np.array([np.log10(2.), np.log10(0.1), 70, 1500, np.log(15-10.0)])
 SIG=15.
 
 # TABOO variables
-DRCTRY = '/home/skachuck/work/pgr/taboo/'
+DRCTRY = '/home/sbk83_local/pgr/taboo/'
 TBTEMPLATE = DRCTRY+'tb_template.F90'
 DATATEMPLATE = DRCTRY+'data_template.inc'
 
@@ -305,6 +305,16 @@ def Avv(params,v, data, sig):
 def neg_loglike(x, *args):
     return -loglikelihood(x, *args)[0]
 
+class pickleable_geodesic(geodesic):
+    def results(self):
+        res = {}
+        res['ts'] = self.ts
+        res['xs'] = self.xs
+        res['vs'] = self.vs
+        res['rs'] = self.rs
+        res['vels'] = self.vels
+        return res
+
 
 if __name__ == '__main__':
     import argparse
@@ -545,9 +555,15 @@ if __name__ == '__main__':
                                             7.25853785e-02])
         DATA = TDAT + ERR
 
-        r = lambda x: residuals(x, DATA, SIG)
-        j = lambda x: jacobian(x, DATA, SIG)
-        A = lambda x,v: Avv(x, v, DATA, SIG)
+#        r = lambda x: residuals(x, DATA, SIG)
+        def r(x):
+            return residuals(x, DATA, SIG)
+#        j = lambda x: jacobian(x, DATA, SIG)
+        def j(x):
+            return jacobian(x, DATA, SIG)
+#        A = lambda x,v: Avv(x, v, DATA, SIG)
+        def A(x,v):
+            return Avv(x, v, DATA, SIG)
 
         x = np.array([ 0.71428571,  np.log(15-9.142857)  ])
         #v = InitialVelocity(x, j, Avv)
@@ -557,24 +573,27 @@ if __name__ == '__main__':
         # Callback function used to monitor the geodesic after each step
         def callback(geo):
             with open(geo.fname, 'w') as f:
-                pickle.dump(geo, f)
+                pickle.dump(geo.results(), f)
             # Integrate until the norm of the velocity has grown by a factor of 10
             # and print out some diagnotistic along the way
             print("{}: Iteration: {:d}, tau: {:f}, |v| = {:f}".format(
                     datetime.datetime.now(), len(geo.vs), geo.ts[-1], np.linalg.norm(geo.vs[-1])))
             return np.linalg.norm(geo.vs[-1]) < 10.0
 
-        geo = geodesic(r, j, A, 15, 2, x, v, atol = 1e-2, rtol = 1e-2,
+        geo = pickleable_geodesic(r, j, A, 15, 2, x, v, atol = 1e-2, rtol = 1e-2,
                         callback = callback)
         geo.fname = fname
                         
+        with open(fname, 'w') as f:
+            pickle.dump(geo.results(), f)
         try:
             geo.integrate(25.0)
-        except KeyboardInterrupt:
-            pass
+        except:
+            print('KEYBOARD INTERRUPT')
 
-        del geo.r, geo.j, geo.A
-        pickle.dump(geo, open(fname, 'w'))
+#        del geo.r, geo.j, geo.Avv
+        with open(fname, 'w') as f:
+            pickle.dump(geo.results(), f)
         
 
     # COMPUTE THE JACOBIAN ON A GRID
