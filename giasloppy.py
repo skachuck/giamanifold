@@ -43,7 +43,7 @@ SIG=15.
 
 # TABOO variables
 with open('tabooconfig','r') as f: 
-    DRCTRY = f.readline()
+    DRCTRY = f.readline().strip()
 TBTEMPLATE = DRCTRY+'tb_template.F90'
 DATATEMPLATE = DRCTRY+'data_template.inc'
 
@@ -316,7 +316,7 @@ class pickleable_geodesic(geodesic):
         res['vels'] = self.vels
         return res
 
-       COOLPOINT1 = {'POS' : np.array([ 0.71428571,  9.142857  ]),
+COOLPOINT1 = {'POS' : np.array([ 0.71428571,  np.log(15-9.142857)  ]),
                     'TDAT': np.array([  1.37094450e+02,   1.76909730e+02,   
                                         6.78583025e+01,
                         4.36532927e+01,   1.51940899e+01,  -1.17675056e+01,
@@ -329,18 +329,19 @@ class pickleable_geodesic(geodesic):
                 -0.85016914,   2.17680239,   5.50808059,   0.8097613 ,
                          7.45813956,  -0.60783704,   2.05831261,  11.35377398,
                                   0.04953255,  -0.07640478,  -0.18069191]),
-                    'SIG' = np.array([  2.74188900e+01,   3.53819460e+01,   1.35716605e+01,
+                    'SIG': np.array([  2.74188900e+01,   3.53819460e+01,   1.35716605e+01,
                     8.73065854e+00,   3.03881799e+00,   2.35350112e+00,
                           8.89618035e+00,   4.16048263e+00,   2.49064530e+00,
                                    7.83999935e-01,   2.73879761e+01,
                                    8.54069132e+00,
                                             3.46933438e-02,   1.08854509e-01,
-                                            7.25853785e-02])
+                                            7.25853785e-02]),
                     'MIN': np.array([  0.84844117,  10.19599704]),
                     'FULL': np.array([np.log10(2.), np.log10(0.71428571), 70,
                                         1500, np.log(15-9.142857)])}
 
-        COOLPOINT4 = {'TDAT': np.array([  3.04299790e+02,   2.98824122e+02,   1.12634787e+02,
+COOLPOINT4 = {'POS':np.array([-1.97959184,  np.log(15-3.714285)  ]),
+                'TDAT': np.array([  3.04299790e+02,   2.98824122e+02,   1.12634787e+02,
                            2.16411098e+01,   9.23738144e-01,   2.99699735e+01,
                            1.64125310e+01,   1.34444550e-02,   1.89174560e+00,
                            5.54921798e-01,  -1.34515341e+02,  -7.80804640e+01,
@@ -352,7 +353,9 @@ class pickleable_geodesic(geodesic):
                        -4.53192798,   3.9131337 ,   7.10964655,   0.31344921,
                                 3.94560317,   5.33219108,   7.29739278]),
 
-        'SIG': 10}
+        'SIG': 10,
+        'FULL': np.array([np.log10(2.), np.log10(-1.97959184), 70,
+                                        1500, np.log(15-3.714285)])}
 
 if __name__ == '__main__':
     import argparse
@@ -361,7 +364,7 @@ if __name__ == '__main__':
     parser.add_argument('typ', type=str, nargs='?', default=None, 
                     help='type of manifold exploration, see overall description',
                     choices=['grid', 'min', 'geomin', 'mcmc', 'uni',
-                    'tighttime', 'jacgrid', 'geodesic'])
+                    'tighttime', 'jacgrid', 'geodesic', 'None'])
     parser.add_argument('fname', type=str, nargs='?', default=None)
     parser.add_argument('nsteps', type=int, nargs='?', default=50)
     parser.add_argument('--s', dest='smooth', default=False,
@@ -486,7 +489,8 @@ if __name__ == '__main__':
     # MINIMIZE
     elif typ in ['min', 'geomin']:
 
-        DATA = TDAT + ERR
+        coolpoint = COOLPOINT4
+        DATA = coolpoint['TDAT'] + coolpoint['ERR']
 
         geo = False if typ == 'min' else True
         pos = TRUE_MODEL[[1,4]]
@@ -494,6 +498,8 @@ if __name__ == '__main__':
 
         pos = TRUE_MODEL.copy()
         pos[[1,4]] = np.array([ 0.71428571,  np.log(15-9.142857)  ])
+        pos = coolpoint['FULL'] 
+        pos = coolpoint['POS'] 
 
 
         posminres = geolm_minimize(residuals, pos, jac=jacobian,
