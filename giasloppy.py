@@ -252,10 +252,10 @@ def gen_taboo_earth(v1, v2, lith):
 
     return earth
 
-def loglikelihood(params, data, smooth=False, full=False, prior=True):
+def loglikelihood(params, data, sig, smooth=False, full=False, prior=True):
     # Prior range
     boxcarprior = params[0] < -8 or params[0] > 3 or params[1] < -3 or params[1] > 3
-    if boxcarprior and priors:
+    if boxcarprior and prior:
         return -np.inf, np.empty(25)
 
     if full:
@@ -270,7 +270,7 @@ def loglikelihood(params, data, smooth=False, full=False, prior=True):
 
     problocs = result.sstopo[-1,sinds[0], sinds[1]] - sstopoloc[tinds]
 
-    prob = -0.5*np.sum(((problocs.T.flatten()- data)/SIG)**2)
+    prob = -0.5*np.sum(((problocs.T.flatten()- data)/sig)**2)
 
     if smooth:
         obsers = (result.sstopo[-1,sinds[0], sinds[1]] -
@@ -444,21 +444,24 @@ if __name__ == '__main__':
     # MCMC THE POSTERIOR
     elif typ == 'mcmc':
         nwalkers, ndim = 10, 2
+        coolpoint = COOLPOINT4
 
-        DATA = TDAT + ERR
+        POS = coolpoint['MIN']
+        DATA = coolpoint['TDAT'] + coolpoint['ERR']
+        SIG = coolpoint['SIG']
 
         sampler = emcee.EnsembleSampler(nwalkers, ndim, loglikelihood, 
-                                        args=(DATA,smooth), threads=4)
+                                        args=(DATA,SIG,smooth), threads=4)
 
         #pos = np.repeat(TRUE_MODEL[[1,4]][None,:], nwalkers, axis=0)
-        #pos = np.repeat(POS[None, :],
-        #                nwalkers, axis=0)
-        #scat = np.random.randn(nwalkers, ndim)
-        #scat[:,0] *= 1
-        #scat[:,1] *= 2.5
-        #pos += scat
+        pos = np.repeat(POS[None, :],
+                        nwalkers, axis=0)
+        scat = np.random.randn(nwalkers, ndim)
+        scat[:,0] *= 1
+        scat[:,1] *= 1
+        pos += scat
 
-        pos = np.loadtxt(fname)[-nwalkers:,[2,3]]
+        #pos = np.loadtxt(fname)[-nwalkers:,[2,3]]
         #params = np.random.multivariate_normal(mean=np.array([-0.89995028, 5.21344428]), 
         #                              cov=np.array([[0.092039901222281395,  0.],
         #                                            [0., 0.0625]]), 
