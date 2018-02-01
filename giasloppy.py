@@ -289,7 +289,7 @@ def full_jacobian(params, data, sig):
     return jac.T
 
 def jacobian(params, data, sig):
-    jac = giader.jacfridr(residuals, x=params, h=np.array([.01, 0.01]), 
+    jac = giader.jacfridr(residuals, x=params, h=np.array([.1, 0.1]), 
                             ndim=15, fargs=(data,sig))
     return jac.T
 
@@ -354,7 +354,8 @@ COOLPOINT4 = {'POS':np.array([-1.97959184,  np.log(15-3.714285)  ]),
                                 3.94560317,   5.33219108,   7.29739278]),
 
         'SIG': 10,
-        'FULL': np.array([np.log10(2.), np.log10(-1.97959184), 70,
+        'MIN': np.array([-1.71883842, 2.39599095]),
+        'FULL': np.array([np.log10(2.), -1.97959184, 70,
                                         1500, np.log(15-3.714285)])}
 
 if __name__ == '__main__':
