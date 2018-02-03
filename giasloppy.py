@@ -39,8 +39,6 @@ NLON, NLAT = 360, 360
 
 TRUE_MODEL = np.array([np.log10(2.), np.log10(0.1), 70, 1500, np.log(15-10.0)])
 
-SIG=15.
-
 # TABOO variables
 with open('tabooconfig','r') as f: 
     DRCTRY = f.readline().strip()
@@ -294,7 +292,7 @@ def jacobian(params, data, sig):
     return jac.T
 
 def residuals(params, data, sig):
-    return (loglikelihood(params, data, prior=False)[1][:15] - data)/sig
+    return (loglikelihood(params, data, sig, prior=False)[1][:15] - data)/sig
 
 # Directional second derivative
 def Avv(params,v, data, sig):
@@ -495,6 +493,7 @@ if __name__ == '__main__':
 
         coolpoint = COOLPOINT4
         DATA = coolpoint['TDAT'] + coolpoint['ERR']
+        SIG = coolpoint['SIG']
 
         geo = False if typ == 'min' else True
         pos = TRUE_MODEL[[1,4]]
@@ -515,7 +514,7 @@ if __name__ == '__main__':
         coolpoint = COOLPOINT1
 
         DATA = coolpoint['TDAT']+ coolpoint['ERR']
-
+        SIG = coolpoint['SIG']
 
         def r(x):
             return residuals(x, DATA, SIG)
@@ -529,8 +528,8 @@ if __name__ == '__main__':
         x = coolpoint['POS']
         x = coolpoint['MIN']
 
-        v = np.array([1., 0])
-        v /= np.linalg.norm(v)
+        v = np.array([2.12, -2.12])
+        #v /= np.linalg.norm(v)
 
         # Callback function used to monitor the geodesic after each step
         def callback(geo):
@@ -542,7 +541,7 @@ if __name__ == '__main__':
                     datetime.datetime.now(), len(geo.vs), geo.ts[-1], np.linalg.norm(geo.vs[-1])))
             return np.linalg.norm(geo.vs[-1]) < 10.0
 
-        geo = pickleable_geodesic(r, j, A, 15, 2, x, v, atol = 1e-2, rtol = 1e-2,
+        geo = pickleable_geodesic(r, j, A, 15, 2, x, v, atol = 1e0, rtol = 1e0,
                         callback = callback)
         geo.fname = fname
                         
