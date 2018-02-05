@@ -294,7 +294,7 @@ def jacobian(params, data, sig):
     return jac.T
 
 def residuals(params, data, sig):
-    return (loglikelihood(params, data, prior=False)[1][:15] - data)/sig
+    return (loglikelihood(params, data, sig, prior=False)[1][:15] - data)/sig
 
 # Directional second derivative
 def Avv(params,v, data, sig):
@@ -356,7 +356,8 @@ COOLPOINT4 = {'POS':np.array([-1.97959184,  np.log(15-3.714285)  ]),
         'SIG': 10,
         'MIN': np.array([-1.71883842, 2.39599095]),
         'FULL': np.array([np.log10(2.), -1.97959184, 70,
-                                        1500, np.log(15-3.714285)])}
+                                        1500, np.log(15-3.714285)]),
+        'MINPOS1': np.array([-2, 0.5])}
 
 if __name__ == '__main__':
     import argparse
@@ -495,15 +496,12 @@ if __name__ == '__main__':
 
         coolpoint = COOLPOINT4
         DATA = coolpoint['TDAT'] + coolpoint['ERR']
+        SIG = coolpoint['SIG']
 
-        geo = False if typ == 'min' else True
-        pos = TRUE_MODEL[[1,4]]
-        pos = np.array([1, 2])
-
-        pos = TRUE_MODEL.copy()
-        pos[[1,4]] = np.array([ 0.71428571,  np.log(15-9.142857)  ])
-        pos = coolpoint['FULL'] 
-        pos = coolpoint['POS'] 
+        geo = False if typ == 'min' else True 
+      
+        pos = coolpoint['MINPOS1'] 
+        pos = np.array([-2.20831155,  1.72574766])
 
 
         posminres = geolm_minimize(residuals, pos, jac=jacobian,
