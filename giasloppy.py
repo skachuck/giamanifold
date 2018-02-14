@@ -287,7 +287,7 @@ def full_jacobian(params, data, sig):
     return jac.T
 
 def jacobian(params, data, sig):
-    jac = giader.jacfridr(residuals, x=params, h=np.array([.1, 0.1]), 
+    jac = giader.jacfridr(residuals, x=params, h=np.array([.01, 0.01]), 
                             ndim=15, fargs=(data,sig))
     return jac.T
 
@@ -336,7 +336,10 @@ COOLPOINT1 = {'POS' : np.array([ 0.71428571,  np.log(15-9.142857)  ]),
                                             7.25853785e-02]),
                     'MIN': np.array([  0.84844117,  np.log(15-10.19599704)]),
                     'FULL': np.array([np.log10(2.), np.log10(0.71428571), 70,
-                                        1500, np.log(15-9.142857)])}
+                                        1500, np.log(15-9.142857)]),
+        'MINPOS1': np.array([-2, 0.5]),
+        'MINPOS2': np.array([0, 0.5]),
+        'MINPOS3': np.array([1.5, 1.])}
 
 COOLPOINT4 = {'POS':np.array([-1.97959184,  np.log(15-3.714285)  ]),
                 'TDAT': np.array([  3.04299790e+02,   2.98824122e+02,   1.12634787e+02,
@@ -354,7 +357,10 @@ COOLPOINT4 = {'POS':np.array([-1.97959184,  np.log(15-3.714285)  ]),
         'SIG': 10,
         'MIN': np.array([-1.71883842, 2.39599095]),
         'FULL': np.array([np.log10(2.), -1.97959184, 70,
-                                        1500, np.log(15-3.714285)])}
+                                        1500, np.log(15-3.714285)]),
+        'MINPOS1': np.array([-2, 0.5]),
+        'MINPOS2': np.array([0, 0.5]),
+        'MINPOS3': np.array([1.5, 1.])}
 
 if __name__ == '__main__':
     import argparse
@@ -397,7 +403,7 @@ if __name__ == '__main__':
                    'l': (30, 250, 2)}
    
     # Check the output file and create if not present - OVERWRITES!
-    if fname is not None:
+    if fname not in [None, 'None']:
         try:
             with open(fname, 'r') as f:
                 pass
@@ -447,6 +453,7 @@ if __name__ == '__main__':
         POS = coolpoint['MIN']
         DATA = coolpoint['TDAT'] + coolpoint['ERR']
         SIG = coolpoint['SIG']
+        TRUE_MODEL = coolpoint['FULL']
 
         sampler = emcee.EnsembleSampler(nwalkers, ndim, loglikelihood, 
                                         args=(DATA,SIG,smooth), threads=4)
@@ -491,30 +498,30 @@ if __name__ == '__main__':
     # MINIMIZE
     elif typ in ['min', 'geomin']:
 
-        coolpoint = COOLPOINT4
+        coolpoint = COOLPOINT1
         DATA = coolpoint['TDAT'] + coolpoint['ERR']
         SIG = coolpoint['SIG']
+        TRUE_MODEL = coolpoint['FULL']
 
-        geo = False if typ == 'min' else True
-        pos = TRUE_MODEL[[1,4]]
-        pos = np.array([1, 2])
-
-        pos = TRUE_MODEL.copy()
-        pos[[1,4]] = np.array([ 0.71428571,  np.log(15-9.142857)  ])
-        pos = coolpoint['FULL'] 
-        pos = coolpoint['POS'] 
+        geo = False if typ == 'min' else True 
+      
+        pos = coolpoint['MINPOS1'] 
+        #pos = np.array([-2.20831155,  1.72574766])
+        #pos = np.array([-1, 2.])
 
 
         posminres = geolm_minimize(residuals, pos, jac=jacobian,
-        fargs=(DATA,SIG),
-                        jargs=(DATA,SIG), keep_steps=True, geo=geo)
+                        fargs=(DATA,SIG), jargs=(DATA,SIG), 
+                        keep_steps=True, geo=geo,
+                        maxstep=400, maxfeval=600, maxjeval=100)
         pickle.dump(posminres, open(fname, 'w'))
 
     elif typ == 'geodesic':
-        coolpoint = COOLPOINT1
+        coolpoint = COOLPOINT4
 
         DATA = coolpoint['TDAT']+ coolpoint['ERR']
         SIG = coolpoint['SIG']
+        TRUE_MODEL = coolpoint['FULL']
 
         def r(x):
             return residuals(x, DATA, SIG)
@@ -525,11 +532,9 @@ if __name__ == '__main__':
         def A(x,v):
             return Avv(x, v, DATA, SIG)
 
-        x = coolpoint['POS']
         x = coolpoint['MIN']
 
-        v = np.array([2.12, -2.12])
-        #v /= np.linalg.norm(v)
+        v = np.array([2., 0.])
 
         # Callback function used to monitor the geodesic after each step
         def callback(geo):
@@ -539,7 +544,7 @@ if __name__ == '__main__':
             # and print out some diagnotistic along the way
             print("{}: Iteration: {:d}, tau: {:f}, |v| = {:f}".format(
                     datetime.datetime.now(), len(geo.vs), geo.ts[-1], np.linalg.norm(geo.vs[-1])))
-            return np.linalg.norm(geo.vs[-1]) < 10.0
+            return np.linalg.norm(geo.vs[-1]) < 100.0
 
         geo = pickleable_geodesic(r, j, A, 15, 2, x, v, atol = 1e0, rtol = 1e0,
                         callback = callback)
