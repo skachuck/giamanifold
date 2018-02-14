@@ -517,7 +517,7 @@ if __name__ == '__main__':
         pickle.dump(posminres, open(fname, 'w'))
 
     elif typ == 'geodesic':
-        coolpoint = COOLPOINT1
+        coolpoint = COOLPOINT4
 
         DATA = coolpoint['TDAT']+ coolpoint['ERR']
         SIG = coolpoint['SIG']
@@ -532,11 +532,9 @@ if __name__ == '__main__':
         def A(x,v):
             return Avv(x, v, DATA, SIG)
 
-        x = coolpoint['POS']
         x = coolpoint['MIN']
 
-        v = np.array([2.12, -2.12])
-        #v /= np.linalg.norm(v)
+        v = np.array([2., 0.])
 
         # Callback function used to monitor the geodesic after each step
         def callback(geo):
@@ -546,7 +544,7 @@ if __name__ == '__main__':
             # and print out some diagnotistic along the way
             print("{}: Iteration: {:d}, tau: {:f}, |v| = {:f}".format(
                     datetime.datetime.now(), len(geo.vs), geo.ts[-1], np.linalg.norm(geo.vs[-1])))
-            return np.linalg.norm(geo.vs[-1]) < 10.0
+            return np.linalg.norm(geo.vs[-1]) < 100.0
 
         geo = pickleable_geodesic(r, j, A, 15, 2, x, v, atol = 1e0, rtol = 1e0,
                         callback = callback)
